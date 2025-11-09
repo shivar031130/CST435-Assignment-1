@@ -1,8 +1,11 @@
-from flask import Flask, jsonify, request
-import requests, time
+# --- START OF FILE master.py (Modified for Local Run with Clear Output) ---
+from flask import Flask, request, jsonify
+import requests
+import time
 
 app = Flask(__name__)
 
+# The worker URLs must use localhost or 127.0.0.1 for a local run
 WORKERS = {
     "gen": "http://127.0.0.1:5001/process",
     "norm": "http://127.0.0.1:5002/process",
@@ -12,26 +15,70 @@ WORKERS = {
 
 @app.route('/run_pipeline', methods=['POST'])
 def run_pipeline():
-    t0 = time.time()
+    print("=" * 60)
+    print("🚀 LOCAL REST API MASTER ACTIVITY 🚀")
+    print("=" * 60)
+
+    start_time = time.time()
     payload = request.json or {}
+    data_size = payload.get("data_size", 100)
 
-    # Step 1: Generate data
-    step1 = requests.post(WORKERS["gen"], json=payload).json()
+    print(f"[{time.strftime('%H:%M:%S')}] MASTER: Received pipeline request with data_size = {data_size}...")
 
-    # Step 2: Normalize
-    step2 = requests.post(WORKERS["norm"], json=step1).json()
+    try:
+        # Step 1: Call Worker 1 to generate data
+        print(f"[{time.strftime('%H:%M:%S')}] MASTER: Calling Worker 1 (DataGen)... ", end="")
+        resp1 = requests.post(WORKERS["gen"], json=payload)
+        resp1.raise_for_status()
+        data_from_w1 = resp1.json()
+        print("-> SUCCESS")
 
-    # Step 3: Extract features
-    step3 = requests.post(WORKERS["feat"], json=step2).json()
+        # Step 2: Call Worker 2 to normalize data
+        print(f"[{time.strftime('%H:%M:%S')}] MASTER: Calling Worker 2 (Preprocess)... ", end="")
+        resp2 = requests.post(WORKERS["norm"], json=data_from_w1)
+        resp2.raise_for_status()
+        data_from_w2 = resp2.json()
+        print("-> SUCCESS")
 
-    # Step 4: Analyze
-    step4 = requests.post(WORKERS["anal"], json=step3).json()
+        # Step 3: Call Worker 3 for feature extraction
+        print(f"[{time.strftime('%H:%M:%S')}] MASTER: Calling Worker 3 (Feature)... ", end="")
+        resp3 = requests.post(WORKERS["feat"], json=data_from_w2)
+        resp3.raise_for_status()
+        data_from_w3 = resp3.json()
+        print("-> SUCCESS")
 
-    t1 = time.time()
-    return jsonify({
-        "summary": step4,
-        "total_time": round(t1 - t0, 3)
-    })
+        # Step 4: Call Worker 4 for final analysis
+        print(f"[{time.strftime('%H:%M:%S')}] MASTER: Calling Worker 4 (Analysis)... ", end="")
+        resp4 = requests.post(WORKERS["anal"], json=data_from_w3)
+        resp4.raise_for_status()
+        final_result = resp4.json()
+        print("-> SUCCESS")
+
+        total_time = time.time() - start_time
+        
+        print("-" * 25)
+        print("✅ PIPELINE COMPLETE")
+        print("-" * 25)
+
+        # Create the structured final payload to send back to the client
+        final_payload = {
+            "total_time": f"{total_time:.4f}",
+            "summary": {
+                "final_analysis": final_result.get("analysis", "N/A"),
+                "features": data_from_w3.get("features", {}),
+            }
+        }
+
+        print("Returning final summary to the client.")
+        print("=" * 60)
+        
+        return jsonify(final_payload)
+
+    except requests.exceptions.RequestException as e:
+        print(f"\nERROR: Pipeline failed. One of the worker services may not be running. Details: {e}")
+        return jsonify({"error": "Failed to process pipeline", "details": str(e)}), 500
 
 if __name__ == '__main__':
+    # For a local run, we don't need to specify host="0.0.0.0"
     app.run(port=5000)
+# --- END OF FILE master.py (Modified for Local Run with Clear Output) ---
