@@ -1,0 +1,174 @@
+# --- START OF FILE xmlrpc-pipeline-k8s.yaml (Final Complete Version) ---
+
+# ===================================================================
+# DataGen Service (Worker 1)
+# ===================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datagen-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datagen
+  template:
+    metadata:
+      labels:
+        app: datagen
+    spec:
+      containers:
+      - name: datagen
+        image: xmlrpc-pipeline:k8s
+        imagePullPolicy: IfNotPresent
+        command: ["python", "datagen_xmlrpc.py"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datagen
+spec:
+  selector:
+    app: datagen
+  ports:
+    - port: 8001
+
+---
+# ===================================================================
+# Preprocess Service (Worker 2)
+# ===================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: preprocess-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: preprocess
+  template:
+    metadata:
+      labels:
+        app: preprocess
+    spec:
+      containers:
+      - name: preprocess
+        image: xmlrpc-pipeline:k8s
+        imagePullPolicy: IfNotPresent
+        command: ["python", "preprocess_xmlrpc.py"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: preprocess
+spec:
+  selector:
+    app: preprocess
+  ports:
+    - port: 8002
+
+---
+# ===================================================================
+# Feature Service (Worker 3)
+# ===================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feature-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feature
+  template:
+    metadata:
+      labels:
+        app: feature
+    spec:
+      containers:
+      - name: feature
+        image: xmlrpc-pipeline:k8s
+        imagePullPolicy: IfNotPresent
+        command: ["python", "feature_xmlrpc.py"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feature
+spec:
+  selector:
+    app: feature
+  ports:
+    - port: 8003
+
+---
+# ===================================================================
+# Analysis Service (Worker 4)
+# ===================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analysis-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analysis
+  template:
+    metadata:
+      labels:
+        app: analysis
+    spec:
+      containers:
+      - name: analysis
+        image: xmlrpc-pipeline:k8s
+        imagePullPolicy: IfNotPresent
+        command: ["python", "analysis_xmlrpc.py"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analysis
+spec:
+  selector:
+    app: analysis
+  ports:
+    - port: 8004
+
+---
+# ===================================================================
+# Master Service (Orchestrator)
+# ===================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: master-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: master
+  template:
+    metadata:
+      labels:
+        app: master
+    spec:
+      containers:
+      - name: master
+        image: xmlrpc-pipeline:k8s
+        imagePullPolicy: IfNotPresent
+        command: ["python", "master_xmlrpc.py"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: master
+spec:
+  selector:
+    app: master
+  ports:
+    - protocol: TCP
+      port: 8005
+      targetPort: 8005
+  type: NodePort
+# --- END OF FILE xmlrpc-pipeline-k8s.yaml (Final Complete Version) ---

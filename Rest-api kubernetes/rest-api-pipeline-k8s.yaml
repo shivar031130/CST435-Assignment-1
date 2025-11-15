@@ -1,0 +1,174 @@
+# --- START OF FILE rest-api-pipeline-k8s.yaml ---
+
+# ===================================================================
+# DataGen Service (Worker 1)
+# ===================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker1-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker1
+  template:
+    metadata:
+      labels:
+        app: worker1
+    spec:
+      containers:
+      - name: worker1
+        image: rest-api-pipeline:k8s
+        imagePullPolicy: IfNotPresent
+        command: ["python", "worker1.py"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker1 # This is the DNS name the master will use
+spec:
+  selector:
+    app: worker1
+  ports:
+    - port: 5001
+
+---
+# ===================================================================
+# Preprocess Service (Worker 2)
+# ===================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker2-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker2
+  template:
+    metadata:
+      labels:
+        app: worker2
+    spec:
+      containers:
+      - name: worker2
+        image: rest-api-pipeline:k8s
+        imagePullPolicy: IfNotPresent
+        command: ["python", "worker2.py"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker2
+spec:
+  selector:
+    app: worker2
+  ports:
+    - port: 5002
+
+---
+# ===================================================================
+# Feature Service (Worker 3)
+# ===================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker3-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker3
+  template:
+    metadata:
+      labels:
+        app: worker3
+    spec:
+      containers:
+      - name: worker3
+        image: rest-api-pipeline:k8s
+        imagePullPolicy: IfNotPresent
+        command: ["python", "worker3.py"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker3
+spec:
+  selector:
+    app: worker3
+  ports:
+    - port: 5003
+
+---
+# ===================================================================
+# Analysis Service (Worker 4)
+# ===================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker4-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker4
+  template:
+    metadata:
+      labels:
+        app: worker4
+    spec:
+      containers:
+      - name: worker4
+        image: rest-api-pipeline:k8s
+        imagePullPolicy: IfNotPresent
+        command: ["python", "worker4.py"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker4
+spec:
+  selector:
+    app: worker4
+  ports:
+    - port: 5004
+
+---
+# ===================================================================
+# Master Service (Orchestrator)
+# ===================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: master-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: master
+  template:
+    metadata:
+      labels:
+        app: master
+    spec:
+      containers:
+      - name: master
+        image: rest-api-pipeline:k8s
+        imagePullPolicy: IfNotPresent
+        command: ["python", "master.py"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: master
+spec:
+  selector:
+    app: master
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: NodePort
+# --- END OF FILE rest-api-pipeline-k8s.yaml ---

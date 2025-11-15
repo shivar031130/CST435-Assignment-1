@@ -1,0 +1,36 @@
+Step 2: Build the Docker Image
+Navigate to your rest-api-pipeline project directory in a terminal.
+Build the image with a memorable tag.
+docker build -t rest-api-pipeline:k8s .
+
+Step 3: Create the Kubernetes Manifest File (rest-api-pipeline-k8s.yaml)
+This is the main Kubernetes configuration file. Create a new file named rest-api-pipeline-k8s.yaml in your project directory and paste the entire content below into it.
+
+Step 4: Deploy the Application to Kubernetes
+Apply the Manifest: In your terminal, from the rest-api-pipeline directory, run:
+kubectl apply -f rest-api-pipeline-k8s.yaml
+You should see 10 objects created.
+
+Check the Status: Monitor the startup of your containers.
+kubectl get pods -w
+Wait until the STATUS for all 5 pods is Running.
+
+Find the Master's Port:
+kubectl get service master
+Look at the PORT(S) column. It will look something like 5000:3XXXX/TCP. Note the five-digit number (the NodePort).
+
+Step 5: Update and Run the Client
+Modify client.py: You must change the port in the master_url string to the NodePort you just found.
+# Find this line in your client.py file:
+master_url = "http://localhost:5000/run_pipeline"
+
+# Change it to the NodePort you found (e.g., 31234):
+master_url = "http://localhost:31234/run_pipeline"
+Run the client: In a new terminal, run the modified script.
+python client.py
+You should see the successful, formatted output of your pipeline.
+
+
+Step 6: Cleanup
+When you are finished, delete all the Kubernetes objects:
+kubectl delete -f rest-api-pipeline-k8s.yaml

@@ -1,0 +1,47 @@
+Run the Docker build command:
+docker build -t xmlrpc-pipeline:k8s .
+
+Step 2.2: Deploy the Application to Kubernetes
+This step instructs Kubernetes to read your configuration file and create all the necessary services and deployments.
+
+In the same terminal, run the kubectl apply command:
+kubectl apply -f xmlrpc-pipeline-k8s.yaml
+Expected Output: You should see confirmation that 10 objects have been created (5 deployments and 5 services).
+
+Step 2.3: Verify the Deployment
+Wait for all the service containers (Pods) to start up and enter a healthy state.
+
+Run the following command to watch the status of the pods:
+kubectl get pods -w
+Wait until the STATUS for all 5 pods shows Running and the RESTARTS count is 0. This may take a minute.
+
+Once all pods are running, press Ctrl+C to stop watching.
+
+Step 2.4: Find the Master Service Connection Port
+Kubernetes exposes the master service on a random high-numbered port (a NodePort). You need to find this port to connect your client.
+
+
+Run the following command:
+kubectl get service master
+
+Look at the PORT(S) column in the output. It will show a mapping like 8005:3XXXX/TCP.
+Note down the five-digit number (e.g., 31234). This is your NodePort.
+
+Step 2.5: Configure the Client
+Update the client script to connect to the correct NodePort.
+Open the client_xmlrpc.py file in a text editor.
+Find the line that defines the master_url.
+Replace the placeholder port XXXXX with the NodePort you noted in the previous step.
+Before: NODE_PORT = "XXXXX"
+After (Example): NODE_PORT = "31234"
+Save the client_xmlrpc.py file.
+
+Step 2.6: Run the Pipeline
+Execute the client script to trigger the pipeline.
+In your terminal, run the command:
+python client_xmlrpc.py
+Expected Output: You will see the fully formatted summary of the pipeline execution, including the final results and the total execution time.
+
+3.0 Cleanup
+After you have finished your testing, run the following command to delete all the Kubernetes components associated with this pipeline, leaving your cluster in a clean state.
+kubectl delete -f xmlrpc-pipeline-k8s.yaml
